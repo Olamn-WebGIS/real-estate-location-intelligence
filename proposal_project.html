@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commercial Real Estate Intelligence Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        #map { height: 500px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .metric-gradient { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
+        
+        /* Custom Red Icon Styling to match the toggle */
+        .competitor-marker {
+            background-color: #dc3545;
+            border: 2px solid white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-size: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .table-responsive { max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 px-4">
+        <span class="navbar-brand fw-bold">📍 Site Selection & Market Gap Dashboard</span>
+        <span class="ms-auto text-light border border-secondary rounded px-2 py-1 small">Enterprise Edition</span>
+    </nav>
+
+    <div class="container-fluid px-4">
+        
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card p-3 bg-white border-start border-danger border-4">
+                    <small class="text-uppercase fw-bold text-muted">Competitor Outlets</small>
+                    <h3 class="fw-bold text-danger mb-0" id="comp-count">3 Stores</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 bg-white border-start border-primary border-4">
+                    <small class="text-uppercase fw-bold text-muted">Market Demand Status</small>
+                    <h3 class="fw-bold text-primary mb-0">High Density</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 bg-white border-start border-success border-4">
+                    <small class="text-uppercase fw-bold text-muted">Opportunity Gaps Found</small>
+                    <h3 class="fw-bold text-success mb-0">1 Prime Zone</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 metric-gradient text-white">
+                    <small class="text-uppercase fw-bold opacity-75">Target Location</small>
+                    <h3 class="fw-bold mb-0">Lekki Phase 1</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            
+            <div class="col-md-3 mb-4">
+                <div class="card p-3 mb-3">
+                    <h5 class="fw-bold mb-3">Layer Controls</h5>
+                    
+                    <div class="form-check form-switch mb-3 p-2 rounded border border-light-subtle bg-light">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="competitorToggle" checked>
+                        <label class="form-check-label fw-semibold text-danger" for="competitorToggle">🛡️ Competitor Locations</label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3 p-2 rounded border border-light-subtle bg-light">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="demandToggle" checked>
+                        <label class="form-check-label fw-semibold text-primary" for="demandToggle">💎 High-Demand Zones</label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3 p-2 rounded border border-light-subtle bg-light">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="gapToggle" checked>
+                        <label class="form-check-label fw-semibold text-success" for="gapToggle">🔥 Prime Opportunity Gap</label>
+                    </div>
+
+                    <hr>
+                    <h6 class="fw-bold text-secondary small text-uppercase">Symbology Matching</h6>
+                    <div class="small text-muted">
+                        <p class="mb-1"><span class="badge bg-danger rounded-circle me-1">🛡️</span> Red Circle = Competitor Outlets</p>
+                        <p class="mb-1"><span class="badge bg-primary me-1">💎</span> Blue Poly = High Demand Cluster</p>
+                        <p class="mb-0"><span class="badge bg-success rounded-circle me-1">🔥</span> Green Ring = Total Market Vacuum</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="card p-2 mb-4">
+                    <div id="map"></div>
+                </div>
+
+                <div class="card p-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="fw-bold mb-0">📋 Workspace Attribute Data Ledger</h5>
+                        <span class="badge bg-secondary">Live Sync Active</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-dark small">
+                                <tr>
+                                    <th>Feature Name</th>
+                                    <th>Classification Type</th>
+                                    <th>Latitude</th>
+                                    <th>Longitude</th>
+                                    <th>Market Risk Assessment</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small" id="data-table-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. Initialize map view centered directly on Lekki Phase 1
+        const map = L.map('map').setView([6.4360, 3.4735], 15);
+
+        // 2. Load the minimalist tile set
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap contributors © CARTO'
+        }).addTo(map);
+
+        // Mock Structured Asset Inventory Database
+        const locationsData = [
+            { name: "Competitor Brand A", type: "Competitor Location 🛡️", lat: 6.4380, lng: 3.4590, status: "High Threat" },
+            { name: "Competitor Brand B", type: "Competitor Location 🛡️", lat: 6.4330, lng: 3.4620, status: "Moderate Threat" },
+            { name: "Competitor Brand C", type: "Competitor Location 🛡️", lat: 6.4410, lng: 3.4680, status: "High Threat" },
+            { name: "Admiralty Way Hub", type: "High-Demand Zone 💎", lat: 6.4390, lng: 3.4780, status: "Highly Underserved" },
+            { name: "Block 12 Market Vacuum", type: "Prime Opportunity Gap 🔥", lat: 6.4350, lng: 3.4760, status: "Strategic Sweetspot" }
+        ];
+
+        // 3. Setup Custom Red UI icon mapping
+        const redShieldIcon = L.divIcon({
+            html: '🛡️',
+            className: 'competitor-marker',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        // 4. Generate Layers
+        const competitors = L.layerGroup([
+            L.marker([locationsData[0].lat, locationsData[0].lng], {icon: redShieldIcon}).bindPopup(`<b>${locationsData[0].name}</b>`),
+            L.marker([locationsData[1].lat, locationsData[1].lng], {icon: redShieldIcon}).bindPopup(`<b>${locationsData[1].name}</b>`),
+            L.marker([locationsData[2].lat, locationsData[2].lng], {icon: redShieldIcon}).bindPopup(`<b>${locationsData[2].name}</b>`)
+        ]).addTo(map);
+
+        const demandZones = L.layerGroup([
+            L.polygon([[6.4390, 3.4750], [6.4420, 3.4780], [6.4390, 3.4820], [6.4360, 3.4780]], { 
+                color: '#0d6efd', fillColor: '#0d6efd', fillOpacity: 0.12, weight: 3 
+            }).bindPopup(`<b>💎 ${locationsData[3].name}</b>`)
+        ]).addTo(map);
+
+        const opportunityGap = L.layerGroup([
+            L.circle([locationsData[4].lat, locationsData[4].lng], {
+                color: '#198754', fillColor: '#198754', fillOpacity: 0.30, weight: 3, radius: 350
+            }).bindPopup(`<b>🔥 ${locationsData[4].name}</b>`)
+        ]).addTo(map);
+
+        // 5. Populate Dynamic Attribute Table from Data Inventory
+        const tableBody = document.getElementById('data-table-body');
+        locationsData.forEach(row => {
+            const badgeColor = row.status.includes('High') || row.status.includes('Threat') ? 'danger' : 'success';
+            tableBody.innerHTML += `
+                <tr>
+                    <td class="fw-bold text-dark">${row.name}</td>
+                    <td>${row.type}</td>
+                    <td><code>${row.lat.toFixed(4)}</code></td>
+                    <td><code>${row.lng.toFixed(4)}</code></td>
+                    <td><span class="badge bg-${badgeColor}-subtle text-${badgeColor} border border-${badgeColor}">${row.status}</span></td>
+                </tr>
+            `;
+        });
+
+        // 6. Connect Layout Switches
+        document.getElementById('competitorToggle').addEventListener('change', e => {
+            if(e.target.checked) {
+                map.addLayer(competitors);
+                document.getElementById('comp-count').innerText = "3 Stores";
+            } else {
+                map.removeLayer(competitors);
+                document.getElementById('comp-count').innerText = "0 Stores";
+            }
+        });
+        document.getElementById('demandToggle').addEventListener('change', e => {
+            if(e.target.checked) map.addLayer(demandZones); else map.removeLayer(demandZones);
+        });
+        document.getElementById('gapToggle').addEventListener('change', e => {
+            if(e.target.checked) map.addLayer(opportunityGap); else map.removeLayer(opportunityGap);
+        });
+    </script>
+</body>
+</html>
